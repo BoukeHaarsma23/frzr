@@ -280,6 +280,20 @@ frzr_deploy() {
 				NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
 				SUBVOL="${DEPLOY_PATH}/${NAME}"
 				IMG_FILE="${FRZR_SOURCE}"
+			elif [[ "$FRZR_SOURCE" == "docker://"* ]]; then
+				NAME=$(skopeo inspect ${FRZR_SOURCE} | jq -r '.Labels."frzr.image.version"')
+				SUBVOL="${DEPLOY_PATH}/${NAME}"
+				btrfs subvol create ${SUBVOL}
+				#HACKHACKHACK
+				#GET tar from skopeo
+				rm -rf /home/gamer/oci
+				mkdir -p /home/gamer/oci
+				skopeo copy ${FRZR_SOURCE} dir:/home/gamer/oci
+				# could use skopeo as well to get layer name, now do the ultra hackish way of checking the biggest size file
+				IMG_FILE=$(du /home/gamer/oci/* | sort -n -r | head -n 1 | cut -f 2)
+				#ENDHACKHACKHACK
+				tar -xf ${IMG_FILE} -C ${SUBVOL}
+				STATE="INSTALL"
 			else
 				TASK_MSG="We will be downloading the image from the specified repo"
 				REPO=$(echo "${SOURCE}" | cut -f 1 -d ':')
