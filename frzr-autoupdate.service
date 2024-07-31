@@ -5,6 +5,6 @@ Wants=network-online.target
 
 [Service]
 Type=oneshot
-ExecStart=frzr-deploy
+ExecStart=frzr deploy
 RemainAfterExit=false
 StandardOutput=journal
