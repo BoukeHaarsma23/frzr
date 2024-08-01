@@ -280,6 +280,29 @@ frzr_deploy() {
 				NAME=$(echo "${FILE_NAME}" | cut -f 1 -d '.')
 				SUBVOL="${DEPLOY_PATH}/${NAME}"
 				IMG_FILE="${FRZR_SOURCE}"
+			elif [[ "$FRZR_SOURCE" == "docker://"* ]]; then
+				NAME=$(skopeo inspect ${FRZR_SOURCE} | jq -r '.Labels."frzr.image.version"')
+				if [ -z "$NAME" ] || [ "$NAME" == "null" ]; then
+					TASK_ERROR=1
+					TASK_ERROR_MSG="No matching source found, or container has no frzr image"
+					STATE="FAIL"
+					send_data
+					continue
+				else
+					SUBVOL="${DEPLOY_PATH}/${NAME}"
+					btrfs subvol create ${SUBVOL}
+					mkdir -p ${MOUNT_PATH}/oci
+					skopeo copy ${FRZR_SOURCE} dir:${MOUNT_PATH}/oci
+					readarray -t LAYERS < <(cat ${MOUNT_PATH}/oci/manifest.json | jq -r '.layers[].digest')
+					for LAYER in "${LAYERS[@]}"; do
+						IMG_FILE=$(echo "${LAYER}" | cut -f 2 -d ':' )
+						IMG_FILE="${MOUNT_PATH}/oci/${IMG_FILE}" 
+						tar --same-owner -xf ${IMG_FILE} -C ${SUBVOL}
+					done
+					STATE="INSTALL"
+					send_data
+					continue
+				fi
 			else
 				TASK_MSG="We will be downloading the image from the specified repo"
 				REPO=$(echo "${SOURCE}" | cut -f 1 -d ':')
