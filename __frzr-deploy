@@ -299,6 +299,7 @@ frzr_deploy() {
 						IMG_FILE="${MOUNT_PATH}/oci/${IMG_FILE}" 
 						tar --same-owner -xf ${IMG_FILE} -C ${SUBVOL}
 					done
+					btrfs property set -fts $SUBVOL ro true
 					STATE="INSTALL"
 					send_data
 					continue
