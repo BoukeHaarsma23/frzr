@@ -282,14 +282,20 @@ frzr_deploy() {
 				IMG_FILE="${FRZR_SOURCE}"
 			elif [[ "$FRZR_SOURCE" == "docker://"* ]]; then
 				NAME=$(skopeo inspect ${FRZR_SOURCE} | jq -r '.Labels."frzr.image.version"')
+				SUBVOL="${DEPLOY_PATH}/${NAME}"
 				if [ -z "$NAME" ] || [ "$NAME" == "null" ]; then
 					TASK_ERROR=1
 					TASK_ERROR_MSG="No matching source found, or container has no frzr image"
 					STATE="FAIL"
 					send_data
 					continue
+				elif [ -e "${SUBVOL}" ]; then
+					TASK_ERROR=1
+					TASK_ERROR_MSG="${NAME} is already installed"
+					STATE="FAIL"
+					send_data
+					continue
 				else
-					SUBVOL="${DEPLOY_PATH}/${NAME}"
 					btrfs subvol create ${SUBVOL}
 					mkdir -p ${MOUNT_PATH}/oci
 					skopeo copy ${FRZR_SOURCE} dir:${MOUNT_PATH}/oci
