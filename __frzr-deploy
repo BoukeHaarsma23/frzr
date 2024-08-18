@@ -25,6 +25,7 @@ frzr_deploy() {
 	STATE="FRZR_DEPLOY_CHECK"
 	TASK_TRACKER=0
 	while $RUNNING; do
+		echo "${TASK_MSG}"
 		case "$STATE" in
 		"FRZR_DEPLOY_CHECK")
 			TASK_STATE="CHECK"
